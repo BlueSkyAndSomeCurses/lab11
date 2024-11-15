@@ -1,47 +1,52 @@
 package ua.edu.ucu.apps.task2;
 
-
+import com.mailjet.client.ClientOptions;
+import com.mailjet.client.MailjetClient;
+import com.mailjet.client.MailjetRequest;
+import com.mailjet.client.MailjetResponse;
+import com.mailjet.client.resource.Emailv31;
 import lombok.AllArgsConstructor;
-
-import javax.mail.*;
-import javax.mail.internet.*;
-import java.util.Properties;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 @AllArgsConstructor
 public class MailSender {
-  public final String apiKey;
-  public final String apiSecret;
-  public final String hostEmail;
+  private final String apiKey;
+  private final String apiSecret;
+  private final String fromEmail;
 
-
-  public void sendMail(MailInfo mailInfo) {
-    Properties props = new Properties();
-    props.put("mail.smtp.host", "in-v3.mailjet.com");
-    props.put("mail.smtp.port", "587");
-    props.put("mail.smtp.auth", "true");
-    props.put("mail.smtp.starttls.enable", "true");
-    Authenticator auth = new Authenticator() {
-      protected PasswordAuthentication getPasswordAuthentication() {
-        return new PasswordAuthentication(apiKey, apiSecret);
-      }
-    };
-    Session session = Session.getInstance(props, auth);
-
+  public void sendEmail(MailInfo info) {
     try {
-      // Create a message with the specified attributes
-      Message message = new MimeMessage(session);
-      message.setFrom(new InternetAddress("hostEmail"));
-      message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(mailInfo.getClientEmail()));
-      message.setSubject("ТЦК");
-      message.setText(mailInfo.generate());
+      // Set up Mailjet client
+      ClientOptions options = ClientOptions.builder()
+          .apiKey(apiKey)
+          .apiSecretKey(apiSecret)
+          .build();
+      MailjetClient client = new MailjetClient(options);
 
-      // Send the message
-      Transport.send(message);
-      System.out.println("Email sent successfully.");
+      // Create email request
+      MailjetRequest request = new MailjetRequest(Emailv31.resource)
+          .property(Emailv31.MESSAGES, new JSONArray()
+              .put(new JSONObject()
+                  .put("From", new JSONObject()
+                      .put("Email", fromEmail)
+                      .put("Name", "ViktoKorneplod"))
+                  .put("To", new JSONArray()
+                      .put(new JSONObject()
+                          .put("Email", info.getClientEmail())))
+                  .put("Subject", "ТЦК")
+                  .put("HTMLPart", info.generate())));
 
-    } catch (MessagingException e) {
-      e.printStackTrace();
-      System.out.println("Error sending email: " + e.getMessage());
+      MailjetResponse response = client.post(request);
+
+      if (response.getStatus() == 200) {
+        System.out.println("Email sent successfully!");
+      } else {
+        System.err.println("Failed to send email. Status: " + response.getStatus());
+        System.err.println("Response: " + response.getData());
+      }
+    } catch (Exception e) {
+      System.err.println("Error while sending email: " + e.getMessage());
     }
   }
 }

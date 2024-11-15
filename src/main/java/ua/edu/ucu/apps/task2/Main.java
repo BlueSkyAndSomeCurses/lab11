@@ -15,6 +15,7 @@ public class Main {
 
     MailSender sender = new MailSender("apiKey", "apiSecret", "senderEmail");
 
+
     MailBox box = new MailBox(sender);
     box.addMailInfo(mailInfo);
     box.sendAll();

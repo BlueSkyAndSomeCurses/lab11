@@ -19,7 +19,7 @@ public class MailBox {
 
   void sendAll() {
     for (MailInfo info : infos) {
-      sender.sendMail(info);
+      sender.sendEmail(info);
     }
   }
 }
